@@ -5,11 +5,22 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from whisperlivekit import WhisperLiveKit, parse_args
 from whisperlivekit.audio_processor import AudioProcessor
+from whisperlivekit.punctuation import PunctuationRestoreModel
 
 import asyncio
 import logging
 import os, sys
 import argparse
+from opencc import OpenCC
+cc = OpenCC('s2tw')
+
+sys.argv = [
+    "basic_server.py",
+    "--host", "0.0.0.0",
+    "--port", "8000",
+    "--model", "large-v3", # large-v3, turbo
+    "--language", "zh"
+]
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logging.getLogger().setLevel(logging.WARNING)
@@ -17,11 +28,14 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 kit = None
+model = None # Bert Model
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global kit
+    global kit, model
     kit = WhisperLiveKit()
+    # 標點符號模型初始化
+    model = PunctuationRestoreModel()
     yield
 
 app = FastAPI(lifespan=lifespan)
@@ -43,6 +57,15 @@ async def handle_websocket_results(websocket, results_generator):
     """Consumes results from the audio processor and sends them via WebSocket."""
     try:
         async for response in results_generator:
+            # 修改已經辨識內容之文字(黑色)
+            for index, line in enumerate(response['lines']):
+                print("Index:", index)
+                response['lines'][index]['text'] = cc.convert(response['lines'][index]['text'])
+                # 加上標點符號
+                response['lines'][index]['text'], _ = model.restore_punctuation(response['lines'][index]['text'])
+
+            # 修改預先辨識之文字(灰色)
+            response["buffer_transcription"] = cc.convert(response["buffer_transcription"])
             await websocket.send_json(response)
     except Exception as e:
         logger.warning(f"Error in WebSocket results handler: {e}")
@@ -100,4 +123,5 @@ def main():
     uvicorn.run(**uvicorn_kwargs)
 
 if __name__ == "__main__":
+    
     main()

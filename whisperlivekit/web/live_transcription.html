@@ -320,9 +320,12 @@
         const timerElement = document.querySelector(".timer");
 
         const host = window.location.hostname || "localhost";
-        const port = window.location.port || "8000";
+        // const port = window.location.port || "8000";
+        const port = window.location.port;
         const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-        const defaultWebSocketUrl = `${protocol}://${host}:${port}/asr`;
+        const defaultWebSocketUrl = port
+            ? `${protocol}://${host}:${port}/asr`
+            : `${protocol}://${host}/asr`;
         websocketInput.value = defaultWebSocketUrl;
         websocketUrl = defaultWebSocketUrl;
 
@@ -594,7 +597,7 @@
             }
             
             isRecording = false;
-            updateUI();	
+            updateUI();
         }
 
         async function toggleRecording() {
@@ -628,7 +631,8 @@
             
             if (waitingForStop) {
                 statusText.textContent = "Please wait for processing to complete...";
-                recordButton.disabled = true;  // Optionally disable the button while waiting
+                console.log("Please wait for processing to complete...")
+                // recordButton.disabled = true;  // Optionally disable the button while waiting
                 console.log("Record button disabled");
             } else if (isRecording) {
                 statusText.textContent = "Recording...";

@@ -16,6 +16,8 @@ setup(
         "faster-whisper",
         "uvicorn",
         "websockets",
+        "zhpr",
+        "numpy==1.26.4",
     ],
     extras_require={
         "diarization": ["diart"],

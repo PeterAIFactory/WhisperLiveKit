@@ -110,6 +110,12 @@ ENV/
 env.bak/
 venv.bak/
 
+# BERT Models
+models/
+
+# Certification
+ssl/
+
 # Spyder project settings
 .spyderproject
 .spyproject
